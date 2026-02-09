@@ -774,6 +774,7 @@ export class LinkdAPI {
   async searchJobsV2(options: {
     keyword?: string;
     start?: number;
+    count?: number;
     sortBy?: string;
     datePosted?: string;
     experience?: string | string[];
@@ -794,6 +795,7 @@ export class LinkdAPI {
   } = {}): Promise<Record<string, unknown>> {
     const params: Record<string, unknown> = { start: options.start ?? 0 };
 
+    if (options.count !== undefined) params.count = options.count;
     if (options.keyword) params.keyword = options.keyword;
     if (options.sortBy) params.sortBy = options.sortBy;
     if (options.datePosted) params.datePosted = options.datePosted;
@@ -875,6 +877,7 @@ export class LinkdAPI {
   async searchPeople(options: {
     keyword?: string;
     start?: number;
+    count?: number;
     currentCompany?: string | string[];
     firstName?: string;
     geoUrn?: string | string[];
@@ -888,6 +891,7 @@ export class LinkdAPI {
   } = {}): Promise<Record<string, unknown>> {
     const params: Record<string, unknown> = { start: options.start ?? 0 };
 
+    if (options.count !== undefined) params.count = options.count;
     if (options.keyword) params.keyword = options.keyword;
     if (options.currentCompany) {
       params.currentCompany = Array.isArray(options.currentCompany) ? options.currentCompany.join(',') : options.currentCompany;
@@ -930,6 +934,7 @@ export class LinkdAPI {
   async searchCompanies(options: {
     keyword?: string;
     start?: number;
+    count?: number;
     geoUrn?: string | string[];
     companySize?: string | string[];
     hasJobs?: boolean;
@@ -937,6 +942,7 @@ export class LinkdAPI {
   } = {}): Promise<Record<string, unknown>> {
     const params: Record<string, unknown> = { start: options.start ?? 0 };
 
+    if (options.count !== undefined) params.count = options.count;
     if (options.keyword) params.keyword = options.keyword;
     if (options.geoUrn) {
       params.geoUrn = Array.isArray(options.geoUrn) ? options.geoUrn.join(',') : options.geoUrn;
@@ -968,12 +974,14 @@ export class LinkdAPI {
   async searchServices(options: {
     keyword?: string;
     start?: number;
+    count?: number;
     geoUrn?: string | string[];
     profileLanguage?: string;
     serviceCategory?: string | string[];
   } = {}): Promise<Record<string, unknown>> {
     const params: Record<string, unknown> = { start: options.start ?? 0 };
 
+    if (options.count !== undefined) params.count = options.count;
     if (options.keyword) params.keyword = options.keyword;
     if (options.geoUrn) {
       params.geoUrn = Array.isArray(options.geoUrn) ? options.geoUrn.join(',') : options.geoUrn;
@@ -995,8 +1003,9 @@ export class LinkdAPI {
    * @param start - Pagination start index (default is 0)
    * @returns List of schools matching the search criteria
    */
-  async searchSchools(keyword?: string, start: number = 0): Promise<Record<string, unknown>> {
+  async searchSchools(keyword?: string, start: number = 0, count?: number): Promise<Record<string, unknown>> {
     const params: Record<string, unknown> = { start };
+    if (count !== undefined) params.count = count;
     if (keyword) params.keyword = keyword;
     return this.sendRequest('GET', 'api/v1/search/schools', params);
   }
