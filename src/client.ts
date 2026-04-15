@@ -35,6 +35,8 @@ export interface ClientConfig {
   maxRetries?: number;
   /** Initial delay between retries in milliseconds (default: 1000). Delay increases with each retry. */
   retryDelay?: number;
+  /** Custom headers to add or override default headers. Values override defaults with the same (case-insensitive) name. */
+  headers?: Record<string, string>;
 }
 
 export class LinkdAPIError extends Error {
@@ -81,6 +83,7 @@ export class LinkdAPI {
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly retryDelay: number;
+  private customHeaders: Record<string, string>;
 
   constructor(config: ClientConfig) {
     if (!config.apiKey) {
@@ -92,15 +95,64 @@ export class LinkdAPI {
     this.timeout = config.timeout || DEFAULT_TIMEOUT;
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.retryDelay = config.retryDelay || DEFAULT_RETRY_DELAY;
+    this.customHeaders = { ...(config.headers || {}) };
+  }
+
+  private static readonly DEFAULT_HEADERS: Record<string, string> = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'LinkdAPI-Node-Client/1.0',
+  };
+
+  /** Set or override a single header. */
+  public setHeader(name: string, value: string): void {
+    this.removeKeyCI(name);
+    this.customHeaders[name] = value;
+  }
+
+  /** Replace all custom headers with the given mapping. */
+  public setHeaders(headers: Record<string, string>): void {
+    this.customHeaders = { ...headers };
+  }
+
+  /** Merge additional headers into the existing custom headers. */
+  public updateHeaders(headers: Record<string, string>): void {
+    for (const [name, value] of Object.entries(headers)) {
+      this.setHeader(name, value);
+    }
+  }
+
+  /** Remove a custom header by name (case-insensitive). Returns true if removed. */
+  public removeHeader(name: string): boolean {
+    return this.removeKeyCI(name);
+  }
+
+  /** Remove all custom headers (defaults still apply). */
+  public clearHeaders(): void {
+    this.customHeaders = {};
+  }
+
+  private removeKeyCI(name: string): boolean {
+    const lower = name.toLowerCase();
+    for (const key of Object.keys(this.customHeaders)) {
+      if (key.toLowerCase() === lower) {
+        delete this.customHeaders[key];
+        return true;
+      }
+    }
+    return false;
   }
 
   private getHeaders(): Record<string, string> {
-    return {
-      'X-linkdapi-apikey': this.apiKey,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'LinkdAPI-Node-Client/1.0',
-    };
+    const customLower = new Set(Object.keys(this.customHeaders).map((k) => k.toLowerCase()));
+    const merged: Record<string, string> = {};
+    if (!customLower.has('x-linkdapi-apikey')) {
+      merged['X-linkdapi-apikey'] = this.apiKey;
+    }
+    for (const [name, value] of Object.entries(LinkdAPI.DEFAULT_HEADERS)) {
+      if (!customLower.has(name.toLowerCase())) merged[name] = value;
+    }
+    return { ...merged, ...this.customHeaders };
   }
 
   private async sendRequest(
